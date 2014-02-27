@@ -76,6 +76,10 @@ int main(int argc, char **argv)
 	cl_int err = 0;
 
 	int n = 8;
+	int chunkSize = 8;
+	int dataSize = 1;
+
+	int numChunks = n / chunkSize;
 
 	int* arrayA = generateLinearArray(n);
 	int* arrayB = new int[n]();
@@ -86,7 +90,11 @@ int main(int argc, char **argv)
 	printArray(arrayB, n);
 
 	delete arrayB;
+
+
+	int* arrayC;
 	arrayB = new int[n]();
+	arrayC = new int[numChunks]();
 	
 	CLContext* ctx = new CLContext();
 	cl::Context clctx = ctx->getContext();
@@ -95,13 +103,13 @@ int main(int argc, char **argv)
 	checkErr(err, "cl::Buffer 1");
 	cl::Buffer bufferB(clctx, CL_MEM_READ_WRITE, n*sizeof(int), NULL, &err);
 	checkErr(err, "cl::Buffer 2");
+	cl::Buffer bufferC(clctx, CL_MEM_READ_WRITE, numChunks*sizeof(int), NULL, &err);
+	checkErr(err, "cl::Buffer 3");
 
 	cl::CommandQueue queue = ctx->getQueue();
 	queue.enqueueWriteBuffer(bufferA, CL_TRUE, 0, n*sizeof(int), arrayA);
 	queue.enqueueWriteBuffer(bufferB, CL_TRUE, 0, n*sizeof(int), arrayB);
-
-	int chunkSize = 8;
-	int dataSize = 1;
+	queue.enqueueWriteBuffer(bufferC, CL_TRUE, 0, numChunks*sizeof(int), arrayC);
 
 	for (int i = 0; i < 3; i++)
 	{
@@ -112,6 +120,8 @@ int main(int argc, char **argv)
 		kernel.setArg(3, dataSize);
 	}
 
+	ctx->getKernel(0).setArg(1, bufferC);
+
 	int numberofgroups = 1;
 	int threadspergroup = n;
 
@@ -121,19 +131,19 @@ int main(int argc, char **argv)
 	err = queue.enqueueNDRangeKernel(ctx->getKernel(0), cl::NullRange, global, local);
 	checkErr(err, "CommandQueue::enqueueNDRangeKernel() || Stage 1");
 
-	/*
 	err = queue.enqueueNDRangeKernel(ctx->getKernel(1), cl::NullRange, global, local);
 	checkErr(err, "CommandQueue::enqueueNDRangeKernel() || Stage 2");
 
+	/*
 	err = queue.enqueueNDRangeKernel(ctx->getKernel(2), cl::NullRange, global, local);
 	checkErr(err, "CommandQueue::enqueueNDRangeKernel() || Stage 3");
 	*/
 
-	err = queue.enqueueReadBuffer(bufferB, CL_TRUE, 0, n*sizeof(int), arrayB);
+	err = queue.enqueueReadBuffer(bufferC, CL_TRUE, 0, numChunks*sizeof(int), arrayC);
 	checkErr(err, "CommandQueue::enqueueReadBuffer()");
 
 	std::cout << "OPENCL RESULT: ";
-	printArray(arrayB, n);
+	printArray(arrayC, numChunks);
 
 	getchar();
 }

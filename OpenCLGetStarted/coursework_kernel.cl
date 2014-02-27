@@ -1,6 +1,6 @@
 #define THREADS_PER_GROUP 8
 
-__kernel void ComputeCSumStage1  (__global int* A, __global int* B, int chunkSize, int n)
+__kernel void ComputeCSumStage1  (__global int* A, __global int* B, __global int* C, int chunkSize, int n)
 {
 	int loc = get_local_id(0);
 	int glob = get_global_id(0);
@@ -29,6 +29,7 @@ __kernel void ComputeCSumStage1  (__global int* A, __global int* B, int chunkSiz
 	{
 		B[loc] += B[loc-1];
 	}
+	
 
 }																					
 
