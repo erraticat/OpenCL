@@ -123,6 +123,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Chrono.cpp" />
     <ClCompile Include="CLContext.cpp" />
     <ClCompile Include="Coursework.cpp" />
   </ItemGroup>
@@ -131,6 +132,7 @@
     <None Include="lesson1_kernels.cl" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Chrono.h" />
     <ClInclude Include="CLContext.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

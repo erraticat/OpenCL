@@ -21,6 +21,9 @@
     <ClCompile Include="CLContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Chrono.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="lesson1_kernels.cl" />
@@ -28,6 +31,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CLContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Chrono.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -8,13 +8,12 @@
 #include <fstream>
 #include <cstdlib>
 #include <cstdio>
-
 #include <utility>
-
-#include <chrono>
-#include <ctime>
-
+#include "Chrono.h"
 #include "CLContext.h"
+
+#define DATA_SIZE 8
+#define PRINT_ARRAYS true
 
 inline void checkErr(cl_int err, const char* name)
 {
@@ -52,11 +51,25 @@ int* generateLinearArray(int n)
 	return result;
 }
 
+void compareArrays(int* a, int* b, int n)
+{
+	for (int i = 0; i < n; i++)
+	{
+		if (a[i] != b[i])
+		{
+			std::cout << "ERROR Element " << i << " NO MATCH\n";
+			return;
+		}
+	}
+	std::cout << "Arrays Match \n";
+}
+
 void cpuCumulativeSum(int* a, int* b, int n)
 {
 	b[0] = a[0];
 	for (int i = 1; i < n; i++)
 	{
+		//if (i % 8 == 0) { b[i] = a[i]; continue; } // test array without stage 3
 		b[i] = a[i] + b[i - 1];
 	}
 }
@@ -72,78 +85,102 @@ void printArray(int* array, int n)
 #define THREADS_PER_WORKGROUP 32 /*must be a multiple of 2*/
 
 int main(int argc, char **argv)
-{
+{   
+
 	cl_int err = 0;
+	int n = 17; // Number of Elements
+	int numberThreads = 16;
 
-	int n = 8;
-	int chunkSize = 8;
-	int dataSize = 1;
-
-	int numChunks = n / chunkSize;
+	int chunkSize = 16; // Chunk-size per work-group
+	int numChunks = n / DATA_SIZE;
 
 	int* arrayA = generateLinearArray(n);
 	int* arrayB = new int[n]();
 
+	Chrono c;
 	cpuCumulativeSum(arrayA, arrayB, n);
+	c.PrintElapsedTime_us("ORIGINAL TIME: ");
 
-	std::cout << "Result: ";
-	printArray(arrayB, n);
+	if (PRINT_ARRAYS)
+	{
+		std::cout << "CPU RESULT: ";
+		printArray(arrayB, n);
+		std::cout << "\n";
+	}
 
-	delete arrayB;
-
+	int* arrayB2 = new int[n]();
 
 	int* arrayC;
-	arrayB = new int[n]();
 	arrayC = new int[numChunks]();
 	
 	CLContext* ctx = new CLContext();
 	cl::Context clctx = ctx->getContext();
 
 	cl::Buffer bufferA(clctx, CL_MEM_READ_WRITE, n*sizeof(int), NULL, &err);
-	checkErr(err, "cl::Buffer 1");
+	//checkErr(err, "cl::Buffer 1");
 	cl::Buffer bufferB(clctx, CL_MEM_READ_WRITE, n*sizeof(int), NULL, &err);
-	checkErr(err, "cl::Buffer 2");
+	//checkErr(err, "cl::Buffer 2");
 	cl::Buffer bufferC(clctx, CL_MEM_READ_WRITE, numChunks*sizeof(int), NULL, &err);
-	checkErr(err, "cl::Buffer 3");
+	//checkErr(err, "cl::Buffer 3");
 
 	cl::CommandQueue queue = ctx->getQueue();
 	queue.enqueueWriteBuffer(bufferA, CL_TRUE, 0, n*sizeof(int), arrayA);
-	queue.enqueueWriteBuffer(bufferB, CL_TRUE, 0, n*sizeof(int), arrayB);
+	queue.enqueueWriteBuffer(bufferB, CL_TRUE, 0, n*sizeof(int), arrayB2);
 	queue.enqueueWriteBuffer(bufferC, CL_TRUE, 0, numChunks*sizeof(int), arrayC);
 
 	for (int i = 0; i < 3; i++)
 	{
 		cl::Kernel kernel = ctx->getKernel(i);
-		kernel.setArg(0, bufferA);
-		kernel.setArg(1, bufferB);
 		kernel.setArg(2, chunkSize);
-		kernel.setArg(3, dataSize);
+		kernel.setArg(3, numberThreads);
 	}
 
-	ctx->getKernel(0).setArg(1, bufferC);
+	ctx->getKernel(0).setArg(0, bufferA);
+	ctx->getKernel(0).setArg(1, bufferB);
+
+	ctx->getKernel(1).setArg(0, bufferB);
+	ctx->getKernel(1).setArg(1, bufferC);
+
+	ctx->getKernel(2).setArg(0, bufferC);
+	ctx->getKernel(2).setArg(1, bufferB);
 
 	int numberofgroups = 1;
 	int threadspergroup = n;
 
-	cl::NDRange global(8);
+	cl::NDRange global(numberThreads);
 	cl::NDRange local(8);
 
+	Chrono c2;
 	err = queue.enqueueNDRangeKernel(ctx->getKernel(0), cl::NullRange, global, local);
-	checkErr(err, "CommandQueue::enqueueNDRangeKernel() || Stage 1");
+	//checkErr(err, "CommandQueue::enqueueNDRangeKernel() || Stage 1");
 
 	err = queue.enqueueNDRangeKernel(ctx->getKernel(1), cl::NullRange, global, local);
-	checkErr(err, "CommandQueue::enqueueNDRangeKernel() || Stage 2");
+	//checkErr(err, "CommandQueue::enqueueNDRangeKernel() || Stage 2");
 
-	/*
 	err = queue.enqueueNDRangeKernel(ctx->getKernel(2), cl::NullRange, global, local);
-	checkErr(err, "CommandQueue::enqueueNDRangeKernel() || Stage 3");
-	*/
+	//checkErr(err, "CommandQueue::enqueueNDRangeKernel() || Stage 3");
+
+	c2.PrintElapsedTime_us("\nOPENCL TIME: ");
 
 	err = queue.enqueueReadBuffer(bufferC, CL_TRUE, 0, numChunks*sizeof(int), arrayC);
-	checkErr(err, "CommandQueue::enqueueReadBuffer()");
+	checkErr(err, "CommandQueue::enqueueReadBuffer() C");
 
-	std::cout << "OPENCL RESULT: ";
-	printArray(arrayC, numChunks);
+	if (PRINT_ARRAYS)
+	{
+		std::cout << "\nContents of C: \n";
+		printArray(arrayC, numChunks);
+	}
 
+	err = queue.enqueueReadBuffer(bufferB, CL_TRUE, 0, n*sizeof(int), arrayB2);
+	checkErr(err, "CommandQueue::enqueueReadBuffer() B");
+
+	if (PRINT_ARRAYS)
+	{
+		std::cout << "\nOPENCL RESULT: ";
+		printArray(arrayB2, n);
+		std::cout << "\n\n";
+	}
+
+	compareArrays(arrayB, arrayB2, n);
 	getchar();
 }
