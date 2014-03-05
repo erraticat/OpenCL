@@ -44,6 +44,7 @@ __kernel void ComputeCSumStage1  (__global int* A, __global int* B, int chunkSiz
 	int iterations = chunkSize / THREADS_PER_GROUP;
 
 	int groupOffset = iterations * THREADS_PER_GROUP * get_group_id(0);
+
 	for (int i = 0; i < iterations; i++)
 	{
 		prefixSumBlockEight(A, B, (i*THREADS_PER_GROUP) + groupOffset);

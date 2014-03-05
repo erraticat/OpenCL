@@ -1,4 +1,4 @@
-﻿Build started 03/03/14 12:19:38 PM.
+﻿Build started 05/03/14 8:10:21 PM.
      1>Project "C:\Users\Jamie\documents\visual studio 2013\Projects\OpenCLGetStarted\OpenCLGetStarted\OpenCLGetStarted.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\CL.exe /c /I"C:\Program Files (x86)\AMD APP SDK\2.9\include" /Zi /nologo /W3 /WX- /sdl /Od /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"x64\Debug\\" /Fd"x64\Debug\vc120.pdb" /Gd /TP /errorReport:prompt Coursework.cpp

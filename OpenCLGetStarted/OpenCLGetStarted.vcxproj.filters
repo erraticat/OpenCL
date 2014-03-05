@@ -26,7 +26,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="lesson1_kernels.cl" />
     <None Include="coursework_kernel.cl" />
   </ItemGroup>
   <ItemGroup>

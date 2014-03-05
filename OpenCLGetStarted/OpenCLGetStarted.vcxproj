@@ -129,7 +129,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="coursework_kernel.cl" />
-    <None Include="lesson1_kernels.cl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Chrono.h" />

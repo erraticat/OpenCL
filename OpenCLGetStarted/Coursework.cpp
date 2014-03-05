@@ -13,7 +13,9 @@
 #include "CLContext.h"
 
 #define DATA_SIZE 8
-#define PRINT_ARRAYS true
+#define NUMBER_GROUPS 8
+
+#define PRINT_ARRAYS false  // Set this to true to print out the contents of both arrays
 
 inline void checkErr(cl_int err, const char* name)
 {
@@ -86,13 +88,16 @@ void printArray(int* array, int n)
 
 int main(int argc, char **argv)
 {   
-
+	/*
+	* N items processed by N/2 workgroups will require 2 iterations per workgroup.
+	*/
 	cl_int err = 0;
-	int n = 17; // Number of Elements
-	int numberThreads = 16;
+	int n = 512; // Number of Elements.  Must be a multiple of (numberGroups * threadsPerGroup) or 64 by default
+	int numberThreads = DATA_SIZE * NUMBER_GROUPS; //64 by default
 
-	int chunkSize = 16; // Chunk-size per work-group
-	int numChunks = n / DATA_SIZE;
+
+	int chunkSize = n / NUMBER_GROUPS; // number of elements to give each group
+	int numChunks = n / DATA_SIZE; //total number of chunks that will be handled by all workgroups
 
 	int* arrayA = generateLinearArray(n);
 	int* arrayB = new int[n]();
@@ -148,7 +153,7 @@ int main(int argc, char **argv)
 	int threadspergroup = n;
 
 	cl::NDRange global(numberThreads);
-	cl::NDRange local(8);
+	cl::NDRange local(DATA_SIZE);
 
 	Chrono c2;
 	err = queue.enqueueNDRangeKernel(ctx->getKernel(0), cl::NullRange, global, local);
